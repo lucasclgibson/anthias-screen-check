@@ -1,0 +1,6 @@
+__pycache__/
+.mypy_cache/
+# The model comes from the private Hugging Face repo, never from git.
+*.onnx
+*.pt
+.env

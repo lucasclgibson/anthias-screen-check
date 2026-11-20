@@ -1,0 +1,32 @@
+# Anthias screen check: its own compose project, so Anthias's upgrades (up -d --remove-orphans on the
+# anthias project) never touch it, and removing it is one command.
+#   docker compose -f addons/screen-check/docker-compose.yml up -d --build
+#   docker compose -f addons/screen-check/docker-compose.yml down
+name: anthias-screen-check
+services:
+  screen-check:
+    build: .
+    image: anthias-screen-check:local
+    container_name: anthias-screen-check
+    # Read-only reach into the viewer's compositor: pid: host + SYS_PTRACE lets the check open the cage
+    # Wayland socket through /proc/<viewer pid>/root, with no change to the Anthias viewer container.
+    pid: host
+    cap_add: [SYS_PTRACE]
+    security_opt: ["apparmor:unconfined"]
+    ports: ["8090:8090"]
+    environment:
+      - SCREEN_CHECK_FPS=${SCREEN_CHECK_FPS:-2}
+      - SCREEN_CHECK_THREADS=${SCREEN_CHECK_THREADS:-1}
+      - SCREEN_CHECK_WEBHOOK=${SCREEN_CHECK_WEBHOOK:-}
+      # Read token for the private model repo, from .env next to this file (git-ignored).
+      # Needed only until the model is in the data volume.
+      - HF_TOKEN=${HF_TOKEN:-}
+    volumes: [screen-check-data:/data]
+    cpus: 1.0
+    mem_limit: 300m
+    restart: unless-stopped
+    logging:
+      driver: journald
+      options: {tag: anthias-screen-check}
+volumes:
+  screen-check-data:
